@@ -1,0 +1,8 @@
+---
+- name: Set up automatic updates (Ubuntu)
+  ansible.builtin.include_tasks: debian.yml
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Set up automatic updates (RHEL family)
+  ansible.builtin.include_tasks: redhat.yml
+  when: ansible_facts['os_family'] == 'RedHat'

@@ -1,0 +1,13 @@
+// {{ ansible_managed }}
+// Security updates only. These lists add to Ubuntu's defaults in 50unattended-upgrades.
+Unattended-Upgrade::Allowed-Origins {
+        "${distro_id}:${distro_codename}-security";
+        "${distro_id}ESMApps:${distro_codename}-apps-security";
+        "${distro_id}ESM:${distro_codename}-infra-security";
+};
+Unattended-Upgrade::Remove-Unused-Dependencies "{{ 'true' if unattended_upgrades_remove_unused | bool else 'false' }}";
+Unattended-Upgrade::Automatic-Reboot "{{ 'true' if unattended_upgrades_auto_reboot | bool else 'false' }}";
+Unattended-Upgrade::Automatic-Reboot-Time "{{ unattended_upgrades_reboot_time }}";
+{% if unattended_upgrades_mail | length > 0 %}
+Unattended-Upgrade::Mail "{{ unattended_upgrades_mail }}";
+{% endif %}

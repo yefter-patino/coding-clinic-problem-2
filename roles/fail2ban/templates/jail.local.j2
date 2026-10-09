@@ -1,0 +1,14 @@
+# {{ ansible_managed }}
+[DEFAULT]
+bantime            = {{ fail2ban_bantime }}
+findtime           = {{ fail2ban_findtime }}
+maxretry           = {{ fail2ban_maxretry }}
+ignoreip           = {{ fail2ban_ignore_ips | join(' ') }}
+banaction          = {{ fail2ban_banaction }}
+banaction_allports = {{ fail2ban_banaction_allports }}
+
+[sshd]
+enabled      = true
+port         = ssh
+backend      = {{ fail2ban_backend }}
+journalmatch = {{ fail2ban_journalmatch }}

@@ -1,0 +1,5 @@
+---
+# prod: stricter bans, never reboot automatically (schedule reboots yourself)
+fail2ban_bantime: 3600
+fail2ban_maxretry: 3
+unattended_upgrades_auto_reboot: false

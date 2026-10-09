@@ -1,0 +1,29 @@
+---
+- name: Install dnf-automatic
+  ansible.builtin.dnf:
+    name: dnf-automatic
+    state: present
+
+- name: Set the dnf-automatic rules
+  ansible.builtin.lineinfile:
+    path: "{{ unattended_upgrades_dnf_config_path }}"
+    regexp: '^\s*{{ item.option }}\s*='
+    line: "{{ item.option }} = {{ item.value }}"
+    insertafter: '^\[commands\]'
+  loop:
+    - option: upgrade_type
+      value: "{{ unattended_upgrades_dnf_upgrade_type }}"
+    - option: apply_updates
+      value: "yes"
+    - option: random_sleep
+      value: "{{ unattended_upgrades_dnf_random_sleep }}"
+  loop_control:
+    label: "{{ item.option }}"
+
+- name: Turn on the dnf-automatic timer
+  ansible.builtin.systemd:
+    name: dnf-automatic.timer
+    enabled: true
+    state: started
+  # In a dry run the package is not installed yet, so the timer does not exist.
+  ignore_errors: "{{ ansible_check_mode }}"

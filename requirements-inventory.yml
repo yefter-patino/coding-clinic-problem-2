@@ -1,0 +1,5 @@
+---
+# Only needed for the dynamic EC2 inventory (inventory/aws_ec2.yml).
+# The roles themselves use ansible.builtin modules only.
+collections:
+  - name: amazon.aws

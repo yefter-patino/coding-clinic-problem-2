@@ -1,0 +1,17 @@
+---
+# Sample inputs shared by every host. Anything not set here uses the role defaults
+# (see roles/*/defaults/main.yml for every available setting).
+
+# Who Ansible logs in as (must NOT be root, and must already use SSH keys).
+# ansible_user: ec2-user          # RHEL-family AMIs
+# ansible_user: ubuntu            # Ubuntu AMIs
+
+# SSH hardening
+ssh_hardening_allow_groups: []    # example: ["ssh-users"]; empty = do not restrict
+ssh_hardening_banner_text: "Authorized use only. Activity may be monitored and reported."
+
+# fail2ban: addresses that must never be banned (your office / VPN / bastion)
+fail2ban_ignore_ips:
+  - 127.0.0.1/8
+  - ::1
+  # - 10.0.0.0/8

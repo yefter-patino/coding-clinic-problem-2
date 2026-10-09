@@ -1,0 +1,64 @@
+---
+# Renders every template with the default settings and checks the SSH file with
+# the real sshd. Runs on your own machine (or a CI runner): no EC2 needed.
+#   ansible-playbook tests/render.yml
+- name: Render templates and validate them
+  hosts: localhost
+  connection: local
+  gather_facts: true
+  vars:
+    common_ssh_service: ssh
+    work_dir: "{{ lookup('ansible.builtin.env', 'TMPDIR') | default('/tmp', true) }}/yefter-render-test"
+  tasks:
+    - name: Load the default settings of each role
+      ansible.builtin.include_vars:
+        file: "{{ playbook_dir }}/../roles/{{ item }}/defaults/main.yml"
+      loop: [ssh_hardening, fail2ban, unattended_upgrades]
+
+    - name: Make a clean work folder
+      ansible.builtin.file:
+        path: "{{ work_dir }}"
+        state: directory
+        mode: "0700"
+
+    - name: Render the SSH drop-in
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/ssh_hardening/templates/sshd_hardening.conf.j2"
+        dest: "{{ work_dir }}/sshd.conf"
+        mode: "0600"
+
+    - name: Render the fail2ban jail
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/fail2ban/templates/jail.local.j2"
+        dest: "{{ work_dir }}/jail.local"
+        mode: "0600"
+
+    - name: Render the apt settings
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/unattended_upgrades/templates/{{ item }}.j2"
+        dest: "{{ work_dir }}/{{ item }}"
+        mode: "0600"
+      loop: [20auto-upgrades, 52yefter-unattended-upgrades]
+
+    - name: Check the rendered SSH file contains the key settings
+      ansible.builtin.assert:
+        that:
+          - "'PermitRootLogin no' in lookup('ansible.builtin.file', work_dir ~ '/sshd.conf')"
+          - "'PasswordAuthentication no' in lookup('ansible.builtin.file', work_dir ~ '/sshd.conf')"
+          - "'Ciphers chacha20' in lookup('ansible.builtin.file', work_dir ~ '/sshd.conf')"
+        quiet: true
+
+    - name: Look for the real sshd
+      ansible.builtin.stat:
+        path: /usr/sbin/sshd
+      register: sshd_bin
+
+    - name: Ask the real sshd to validate the rendered SSH file
+      ansible.builtin.command: "/usr/sbin/sshd -t -f {{ work_dir }}/sshd.conf"
+      changed_when: false
+      when: sshd_bin.stat.exists
+
+    - name: Say when sshd was not available
+      ansible.builtin.debug:
+        msg: sshd is not installed here, so only the text checks ran.
+      when: not sshd_bin.stat.exists

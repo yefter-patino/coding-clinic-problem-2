@@ -1,0 +1,25 @@
+---
+- name: Install fail2ban (Ubuntu)
+  ansible.builtin.include_tasks: install_debian.yml
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Install fail2ban (RHEL family)
+  ansible.builtin.include_tasks: install_redhat.yml
+  when: ansible_facts['os_family'] == 'RedHat'
+
+- name: Write the sshd jail settings
+  ansible.builtin.template:
+    src: jail.local.j2
+    dest: "{{ fail2ban_jail_file }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart fail2ban
+
+- name: Start fail2ban and enable it at boot
+  ansible.builtin.service:
+    name: fail2ban
+    state: started
+    enabled: true
+  # In a dry run the package is not installed yet, so the service does not exist.
+  ignore_errors: "{{ ansible_check_mode }}"

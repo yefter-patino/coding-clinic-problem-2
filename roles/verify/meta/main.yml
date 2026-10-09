@@ -1,0 +1,14 @@
+---
+galaxy_info:
+  author: yefter
+  description: Read-only audit of the hardened settings
+  license: MIT
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Ubuntu
+      versions: [jammy, noble]
+    - name: EL
+      versions: ["8", "9"]
+  galaxy_tags: [hardening, cis, security]
+dependencies:
+  - role: common

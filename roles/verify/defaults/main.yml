@@ -1,0 +1,22 @@
+---
+# What a hardened host MUST look like. This is an independent audit: it checks the
+# real running configuration, not the Ansible variables.
+verify_sshd_exact:
+  permitrootlogin: "no"
+  passwordauthentication: "no"
+  pubkeyauthentication: "yes"
+  permitemptypasswords: "no"
+  hostbasedauthentication: "no"
+  ignorerhosts: "yes"
+  permituserenvironment: "no"
+  x11forwarding: "no"
+  loglevel: verbose
+
+# Numbers that must be at or below this limit
+verify_sshd_max:
+  maxauthtries: 4
+  logingracetime: 60
+  clientalivecountmax: 3
+  clientaliveinterval: 300
+
+verify_sshd_binary: /usr/sbin/sshd

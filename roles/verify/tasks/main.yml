@@ -1,0 +1,104 @@
+---
+# ---- SSH: read the settings sshd is really using --------------------------------------
+- name: Read the effective sshd configuration
+  ansible.builtin.command: "{{ verify_sshd_binary }} -T"
+  register: verify_sshd
+  changed_when: false
+  check_mode: false
+
+- name: Check SSH settings that must match exactly
+  ansible.builtin.assert:
+    that: (item.key ~ ' ' ~ item.value) in verify_sshd.stdout_lines
+    fail_msg: "sshd: expected '{{ item.key }} {{ item.value }}'"
+    quiet: true
+  loop: "{{ verify_sshd_exact | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+- name: Check SSH numbers are within the limit
+  ansible.builtin.assert:
+    that:
+      - (verify_sshd.stdout_lines | select('match', '^' ~ item.key ~ ' ') | list | length) == 1
+      - ((verify_sshd.stdout_lines | select('match', '^' ~ item.key ~ ' ') | first).split()[1] | int) <= item.value
+      - ((verify_sshd.stdout_lines | select('match', '^' ~ item.key ~ ' ') | first).split()[1] | int) > 0
+    fail_msg: "sshd: {{ item.key }} must be between 1 and {{ item.value }}"
+    quiet: true
+  loop: "{{ verify_sshd_max | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+# ---- fail2ban ------------------------------------------------------------------------------
+- name: Read the fail2ban service state
+  ansible.builtin.systemd:
+    name: fail2ban
+  register: verify_f2b_unit
+
+- name: Check fail2ban is running and starts at boot
+  ansible.builtin.assert:
+    that:
+      - verify_f2b_unit.status.ActiveState == 'active'
+      - verify_f2b_unit.status.UnitFileState == 'enabled'
+    fail_msg: fail2ban must be active and enabled
+    quiet: true
+
+- name: Check the sshd jail is loaded
+  ansible.builtin.command: fail2ban-client status sshd
+  register: verify_f2b_jail
+  changed_when: false
+  check_mode: false
+  failed_when: "'Status for the jail: sshd' not in verify_f2b_jail.stdout"
+
+# ---- Automatic updates ---------------------------------------------------------------------
+- name: Check apt automatic updates are on (Ubuntu)
+  when: ansible_facts['os_family'] == 'Debian'
+  block:
+    - name: Read the apt periodic settings
+      ansible.builtin.command: apt-config dump APT::Periodic
+      register: verify_apt
+      changed_when: false
+      check_mode: false
+
+    - name: Check unattended upgrades are enabled
+      ansible.builtin.assert:
+        that: "'APT::Periodic::Unattended-Upgrade \"1\";' in verify_apt.stdout"
+        fail_msg: unattended-upgrades is not enabled
+        quiet: true
+
+    - name: Read the apt upgrade timer state
+      ansible.builtin.systemd:
+        name: apt-daily-upgrade.timer
+      register: verify_apt_timer
+
+    - name: Check the apt upgrade timer is enabled
+      ansible.builtin.assert:
+        that: verify_apt_timer.status.UnitFileState == 'enabled'
+        fail_msg: apt-daily-upgrade.timer must be enabled
+        quiet: true
+
+- name: Check dnf-automatic is on (RHEL family)
+  when: ansible_facts['os_family'] == 'RedHat'
+  block:
+    - name: Read the dnf-automatic settings
+      ansible.builtin.command: grep -E '^(upgrade_type|apply_updates)' /etc/dnf/automatic.conf
+      register: verify_dnf
+      changed_when: false
+      check_mode: false
+
+    - name: Check updates are applied automatically
+      ansible.builtin.assert:
+        that:
+          - verify_dnf.stdout_lines | select('match', '^apply_updates\s*=\s*yes') | list | length == 1
+          - verify_dnf.stdout_lines | select('match', '^upgrade_type\s*=\s*security') | list | length == 1
+        fail_msg: dnf-automatic must apply security updates
+        quiet: true
+
+    - name: Read the dnf-automatic timer state
+      ansible.builtin.systemd:
+        name: dnf-automatic.timer
+      register: verify_dnf_timer
+
+    - name: Check the dnf-automatic timer is enabled
+      ansible.builtin.assert:
+        that: verify_dnf_timer.status.UnitFileState == 'enabled'
+        fail_msg: dnf-automatic.timer must be enabled
+        quiet: true

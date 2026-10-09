@@ -1,0 +1,4 @@
+---
+# RHEL-family names the SSH service "sshd"
+common_ssh_service: sshd
+common_sshd_binary: /usr/sbin/sshd

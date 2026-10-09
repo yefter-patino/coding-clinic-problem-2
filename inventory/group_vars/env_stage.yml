@@ -1,0 +1,4 @@
+---
+fail2ban_bantime: 1800
+fail2ban_maxretry: 4
+unattended_upgrades_auto_reboot: false

@@ -1,0 +1,38 @@
+# {{ ansible_managed }}
+# Hardened SSH settings (CIS subset). Edit the variables in Ansible, not this file.
+
+# Root and password login
+PermitRootLogin {{ ssh_hardening_permit_root_login }}
+PasswordAuthentication {{ ssh_hardening_password_authentication }}
+ChallengeResponseAuthentication no
+PubkeyAuthentication yes
+PermitEmptyPasswords no
+HostbasedAuthentication no
+IgnoreRhosts yes
+PermitUserEnvironment no
+
+# Session limits
+MaxAuthTries {{ ssh_hardening_max_auth_tries }}
+LoginGraceTime {{ ssh_hardening_login_grace_time }}
+MaxSessions {{ ssh_hardening_max_sessions }}
+MaxStartups {{ ssh_hardening_max_startups }}
+ClientAliveInterval {{ ssh_hardening_client_alive_interval }}
+ClientAliveCountMax {{ ssh_hardening_client_alive_count_max }}
+
+# Forwarding
+X11Forwarding {{ ssh_hardening_x11_forwarding }}
+AllowTcpForwarding {{ ssh_hardening_allow_tcp_forwarding }}
+
+# Logging and banner
+LogLevel {{ ssh_hardening_log_level }}
+Banner {{ ssh_hardening_banner_path }}
+
+# Strong crypto only
+Ciphers {{ ssh_hardening_ciphers | join(',') }}
+MACs {{ ssh_hardening_macs | join(',') }}
+KexAlgorithms {{ ssh_hardening_kex_algorithms | join(',') }}
+{% if ssh_hardening_allow_groups | length > 0 %}
+
+# Only these groups may log in
+AllowGroups {{ ssh_hardening_allow_groups | join(' ') }}
+{% endif %}

@@ -1,0 +1,53 @@
+---
+# Every value below can be overridden in group_vars / host_vars / -e.
+
+# --- CIS: disable root login and password login -------------------------------
+ssh_hardening_permit_root_login: "no"
+ssh_hardening_password_authentication: "no"
+
+# --- CIS: limit what a session can do ------------------------------------------
+ssh_hardening_max_auth_tries: 4
+ssh_hardening_login_grace_time: 60
+ssh_hardening_max_sessions: 10
+ssh_hardening_max_startups: "10:30:60"
+ssh_hardening_client_alive_interval: 300
+ssh_hardening_client_alive_count_max: 3
+ssh_hardening_x11_forwarding: "no"
+# "no" blocks "ssh -L" tunnels. Set to "yes" on bastions that need them.
+ssh_hardening_allow_tcp_forwarding: "no"
+ssh_hardening_log_level: VERBOSE
+
+# --- Strong crypto (works on OpenSSH 8.0 through 9.x) ---------------------------
+ssh_hardening_ciphers:
+  - chacha20-poly1305@openssh.com
+  - aes256-gcm@openssh.com
+  - aes128-gcm@openssh.com
+  - aes256-ctr
+  - aes192-ctr
+  - aes128-ctr
+ssh_hardening_macs:
+  - hmac-sha2-512-etm@openssh.com
+  - hmac-sha2-256-etm@openssh.com
+ssh_hardening_kex_algorithms:
+  - curve25519-sha256
+  - curve25519-sha256@libssh.org
+  - diffie-hellman-group16-sha512
+  - diffie-hellman-group18-sha512
+
+# --- Optional: only these Linux groups may log in over SSH ----------------------
+# Empty list = no restriction. The play refuses to run if it would lock out
+# the user Ansible connects as.
+ssh_hardening_allow_groups: []
+
+# --- Login banner -----------------------------------------------------------------
+ssh_hardening_banner_text: "Authorized use only. Activity may be monitored and reported."
+ssh_hardening_banner_path: /etc/issue.net
+
+# --- File locations (same on Ubuntu and RHEL) -------------------------------------
+ssh_hardening_config_path: /etc/ssh/sshd_config
+ssh_hardening_dropin_dir: /etc/ssh/sshd_config.d
+# "00-" so it is read first. sshd uses the FIRST value it sees for each setting.
+ssh_hardening_dropin_name: 00-yefter-hardening.conf
+
+# After reloading sshd, open a brand-new connection to prove login still works.
+ssh_hardening_verify_login: true

@@ -1,0 +1,8 @@
+---
+# Operating systems this project supports (distribution -> versions).
+# Ubuntu is matched on the full version, RHEL-family on the major version.
+common_supported_os:
+  Ubuntu: ["22.04", "24.04"]
+  RedHat: ["8", "9"]
+  Rocky: ["8", "9"]
+  AlmaLinux: ["8", "9"]

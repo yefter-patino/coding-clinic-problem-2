@@ -1,0 +1,13 @@
+---
+galaxy_info:
+  author: yefter
+  description: Detect the OS, load OS-specific names, and add safety checks
+  license: MIT
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Ubuntu
+      versions: [jammy, noble]
+    - name: EL
+      versions: ["8", "9"]
+  galaxy_tags: [hardening, cis, security]
+dependencies: []

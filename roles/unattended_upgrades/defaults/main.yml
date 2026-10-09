@@ -1,0 +1,12 @@
+---
+# Reboot automatically after updates that need it? (Ubuntu only, see README)
+unattended_upgrades_auto_reboot: false
+unattended_upgrades_reboot_time: "03:00"
+# Email for update reports. Empty = no email.
+unattended_upgrades_mail: ""
+unattended_upgrades_remove_unused: true
+
+# RHEL family (dnf-automatic)
+unattended_upgrades_dnf_upgrade_type: security   # security | default
+unattended_upgrades_dnf_random_sleep: 300        # seconds, spreads the load across a fleet
+unattended_upgrades_dnf_config_path: /etc/dnf/automatic.conf

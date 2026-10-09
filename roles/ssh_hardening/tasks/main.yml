@@ -1,0 +1,77 @@
+---
+# ---- Safety check: never lock out the user Ansible connects as -------------------
+- name: Read the groups of the user Ansible logs in as
+  ansible.builtin.command: "id -nG {{ common_connecting_user }}"
+  register: ssh_hardening_user_groups
+  changed_when: false
+  check_mode: false
+  when: ssh_hardening_allow_groups | length > 0
+
+- name: Stop if that user is not in an allowed group
+  ansible.builtin.assert:
+    that: ssh_hardening_user_groups.stdout.split() | intersect(ssh_hardening_allow_groups) | length > 0
+    fail_msg: >-
+      {{ common_connecting_user }} is not in any group listed in ssh_hardening_allow_groups.
+      Applying AllowGroups would lock Ansible out.
+    quiet: true
+  when: ssh_hardening_allow_groups | length > 0
+
+# ---- Make sure sshd reads the drop-in folder -------------------------------------
+- name: Make sure the sshd drop-in folder exists
+  ansible.builtin.file:
+    path: "{{ ssh_hardening_dropin_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Make sure sshd_config reads the drop-in folder
+  ansible.builtin.lineinfile:
+    path: "{{ ssh_hardening_config_path }}"
+    regexp: '^\s*Include\s+{{ ssh_hardening_dropin_dir }}/\*\.conf'
+    line: "Include {{ ssh_hardening_dropin_dir }}/*.conf"
+    insertbefore: BOF
+    validate: "{{ common_sshd_binary }} -t -f %s"
+
+- name: Set safe permissions on sshd_config (CIS)
+  ansible.builtin.file:
+    path: "{{ ssh_hardening_config_path }}"
+    owner: root
+    group: root
+    mode: "0600"
+
+# ---- The hardening itself ----------------------------------------------------------
+- name: Install the login banner
+  ansible.builtin.copy:
+    content: "{{ ssh_hardening_banner_text }}\n"
+    dest: "{{ ssh_hardening_banner_path }}"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Write the hardened SSH settings
+  ansible.builtin.template:
+    src: sshd_hardening.conf.j2
+    dest: "{{ ssh_hardening_dropin_dir }}/{{ ssh_hardening_dropin_name }}"
+    owner: root
+    group: root
+    mode: "0600"
+    validate: "{{ common_sshd_binary }} -t -f %s"
+  notify: Reload sshd
+
+- name: Check the complete sshd configuration is valid
+  ansible.builtin.command: "{{ common_sshd_binary }} -t"
+  changed_when: false
+  check_mode: false
+
+# ---- Apply, then prove we can still get in --------------------------------------------
+- name: Apply the SSH changes now
+  ansible.builtin.meta: flush_handlers
+
+- name: Drop the old connection so the next one uses the new settings
+  ansible.builtin.meta: reset_connection
+  when: ssh_hardening_verify_login | bool
+
+- name: Confirm the host still answers on a fresh connection
+  ansible.builtin.ping:
+  when: ssh_hardening_verify_login | bool

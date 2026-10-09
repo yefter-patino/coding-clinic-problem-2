@@ -1,0 +1,28 @@
+---
+- name: Stop early on unsupported operating systems
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['distribution'] in common_supported_os
+      - >-
+        (ansible_facts['distribution_version'] if ansible_facts['distribution'] == 'Ubuntu'
+        else ansible_facts['distribution_major_version']) in common_supported_os[ansible_facts['distribution']]
+    fail_msg: >-
+      {{ ansible_facts['distribution'] }} {{ ansible_facts['distribution_version'] }} is not supported.
+      Supported: {{ common_supported_os }}
+    quiet: true
+
+- name: Load the names that differ between Ubuntu and RHEL
+  ansible.builtin.include_vars: "{{ ansible_facts['os_family'] }}.yml"
+
+- name: Work out which user Ansible logged in as
+  ansible.builtin.set_fact:
+    common_connecting_user: >-
+      {{ ansible_facts.get('env', {}).get('SUDO_USER', ansible_facts['user_id']) }}
+
+- name: Refuse to run if Ansible logs in as root (it would lock you out)
+  ansible.builtin.assert:
+    that: common_connecting_user != 'root'
+    fail_msg: >-
+      Ansible is logging in as root, and this play disables root SSH login.
+      Log in as a normal sudo user (for example ubuntu or ec2-user) with -u or ansible_user.
+    quiet: true

@@ -1,0 +1,4 @@
+---
+# Ubuntu names the SSH service "ssh"
+common_ssh_service: ssh
+common_sshd_binary: /usr/sbin/sshd

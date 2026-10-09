@@ -1,0 +1,5 @@
+---
+# dev: shorter bans so you do not lock yourself out while testing
+fail2ban_bantime: 600
+fail2ban_maxretry: 5
+unattended_upgrades_auto_reboot: true

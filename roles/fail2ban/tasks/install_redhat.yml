@@ -1,0 +1,32 @@
+---
+- name: Trust the EPEL signing key (RHEL only)
+  ansible.builtin.rpm_key:
+    key: "{{ fail2ban_epel_base_url }}/RPM-GPG-KEY-EPEL-{{ ansible_facts['distribution_major_version'] }}"
+    state: present
+  when:
+    - fail2ban_enable_epel | bool
+    - ansible_facts['distribution'] == 'RedHat'
+
+- name: Add the EPEL repository (RHEL)
+  ansible.builtin.dnf:
+    name: "{{ fail2ban_epel_base_url }}/epel-release-latest-{{ ansible_facts['distribution_major_version'] }}.noarch.rpm"
+    state: present
+  when:
+    - fail2ban_enable_epel | bool
+    - ansible_facts['distribution'] == 'RedHat'
+
+- name: Add the EPEL repository (Rocky / AlmaLinux)
+  ansible.builtin.dnf:
+    name: epel-release
+    state: present
+  when:
+    - fail2ban_enable_epel | bool
+    - ansible_facts['distribution'] in ['Rocky', 'AlmaLinux']
+
+- name: Install fail2ban on RHEL-family hosts
+  ansible.builtin.dnf:
+    name:
+      - fail2ban
+      - fail2ban-systemd
+      - nftables
+    state: present

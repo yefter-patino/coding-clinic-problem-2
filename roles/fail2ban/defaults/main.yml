@@ -1,0 +1,27 @@
+---
+# Ban an IP for this many seconds after too many failures
+fail2ban_bantime: 3600
+# ...within this many seconds
+fail2ban_findtime: 600
+# ...this many failed logins
+fail2ban_maxretry: 4
+
+# Addresses that must never be banned (add your office / VPN / bastion here)
+fail2ban_ignore_ips:
+  - 127.0.0.1/8
+  - ::1
+
+# How fail2ban blocks: nftables works on Ubuntu 22.04+ and RHEL 8/9
+fail2ban_banaction: nftables-multiport
+fail2ban_banaction_allports: nftables-allports
+
+# Read sshd logs from the systemd journal (Ubuntu 24.04 has no /var/log/auth.log)
+fail2ban_backend: systemd
+# Which journal entries are sshd's. The unit is "ssh" on Ubuntu and "sshd" on RHEL.
+fail2ban_journalmatch: "_SYSTEMD_UNIT={{ common_ssh_service }}.service + _COMM=sshd"
+
+fail2ban_jail_file: /etc/fail2ban/jail.d/yefter-sshd.local
+
+# RHEL-family: fail2ban lives in EPEL. Set false if you mirror it yourself.
+fail2ban_enable_epel: true
+fail2ban_epel_base_url: https://dl.fedoraproject.org/pub/epel

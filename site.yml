@@ -1,0 +1,19 @@
+---
+# Harden a fleet of Ubuntu / RHEL-family EC2 instances.
+#   ansible-playbook site.yml --check --diff     (dry run, changes nothing)
+#   ansible-playbook site.yml                    (apply)
+#   ansible-playbook site.yml -e target_hosts=env_dev
+- name: Harden Linux instances (CIS subset)
+  hosts: "{{ target_hosts | default('hardening_targets') }}"
+  become: true
+  gather_facts: true
+  # Roll through the fleet in small batches so one bad change cannot hit every host.
+  serial: "{{ hardening_serial | default('25%') }}"
+  max_fail_percentage: "{{ hardening_max_fail_percentage | default(0) }}"
+  roles:
+    - role: ssh_hardening
+      tags: [ssh]
+    - role: fail2ban
+      tags: [fail2ban]
+    - role: unattended_upgrades
+      tags: [updates]

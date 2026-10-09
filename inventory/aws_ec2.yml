@@ -1,0 +1,28 @@
+---
+# Dynamic inventory: builds the host list from EC2 instances.
+# Needs:  ansible-galaxy collection install -r requirements-inventory.yml
+#         boto3 + AWS credentials (aws sso login, or AWS_PROFILE).
+# Use it with:  ansible-playbook -i inventory/aws_ec2.yml site.yml
+plugin: amazon.aws.aws_ec2
+
+# Edit this sample list to the region(s) you want to harden.
+regions:
+  - us-east-1
+
+# Only running instances whose Name tag starts with the project prefix.
+filters:
+  instance-state-name: running
+  "tag:Name": "yefter-*"
+
+# Connect by private IP (run Ansible from inside the VPC / over VPN / bastion).
+hostnames:
+  - private-ip-address
+
+# Every instance lands in hardening_targets, and also in env_<Environment>
+# (env_dev, env_stage, env_prod) based on its Environment tag.
+groups:
+  hardening_targets: "true"
+keyed_groups:
+  - key: tags.Environment
+    prefix: env
+    separator: "_"
